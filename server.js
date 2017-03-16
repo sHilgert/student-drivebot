@@ -1,25 +1,24 @@
-
-
 "use strict";
 
 var http = require("http");
-
 var express = require('express');
+const TelegramBot = require('node-telegram-bot-api');
+
 var app = express();
 
-var TelegramBot = require('node-telegram-bot-api');
+//Ambient
+const TOKEN = process.env.TELEGRAM_TOKEN; 
+const URL = process.env.APP_URL;
+const PORT = process.env.PORT;
 
-var port = (process.env.PORT || 5000);
-
-
-
-
-setInterval(function() {
-  http.get('https://student-drivebot.herokuapp.com/');
-}, 1800000); 
-
-var token = process.env.TELEGRAM_BOT_TOKEN;
-var bot = new TelegramBot(token, { polling: true });
+// Bot
+const options = {
+  webHook: {
+    port: PORT
+  }
+};
+const bot = new TelegramBot(TOKEN, options);
+bot.setWebHook(`${URL}/bot${TOKEN}`);
   
 bot.onText(/ADS/, function (msg) {
   
@@ -48,10 +47,6 @@ bot.onText(/\/cursos/, function (msg) {
       })
     };
     bot.sendMessage(chatId, 'Sobre qual curso você deseja receber informações?', opts);
-});
-
-app.listen(port, function () {
-  console.log('Student drive bot online!');
 });
 
 
