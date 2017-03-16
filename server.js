@@ -1,12 +1,58 @@
-'use strict';
 
-const express = require('express');
-const TelegramBot = require('node-telegram-bot-api');
-const app = express();
 
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
-bot.setWebHook('https://student-drivebot.herokuapp.com/bot${process.env.TELEGRAM_BOT_TOKEN}');
+"use strict";
 
-bot.on('message', function(msg){
-    bot.sendMessage(msg.chat.id, msg.text);
+var http = require("http");
+
+var express = require('express');
+var app = express();
+
+var TelegramBot = require('node-telegram-bot-api');
+
+var port = (process.env.PORT || 5000);
+
+
+
+
+setInterval(function() {
+  http.get('https://student-drivebot.herokuapp.com/');
+}, 1800000); 
+
+var token = process.env.TELEGRAM_BOT_TOKEN;
+var bot = new TelegramBot(token, { polling: true });
+  
+bot.onText(/ADS/, function (msg) {
+  
+
+  var chatId = msg.chat.id;
+  
+  bot.sendMessage(chatId, 'O curso de Análise e Desenvolvimento de Sistemas ...');
 });
+
+bot.onText(/BD/, function (msg) {
+  
+
+  var chatId = msg.chat.id;
+  
+  bot.sendMessage(chatId, 'O curso de Banco de Dados ...');
+});
+
+bot.onText(/\/cursos/, function (msg) {
+  var chatId = msg.chat.id;
+  var opts = {
+      reply_to_message_id: msg.message_id,
+      reply_markup: JSON.stringify({
+        keyboard: [
+          ['ADS'],
+          ['BD']]
+      })
+    };
+    bot.sendMessage(chatId, 'Sobre qual curso você deseja receber informações?', opts);
+});
+
+app.listen(port, function () {
+  console.log('Student drive bot online!');
+});
+
+
+
