@@ -19,7 +19,19 @@ const options = {
 };
 const bot = new TelegramBot(TOKEN, options);
 bot.setWebHook(`${URL}/bot${TOKEN}`);
-  
+
+
+//Error Handlers
+bot.on('polling_error', (error) => console.log(error.code));
+bot.on('webhook_error', (error) => console.log(error.code));
+
+bot.on('message', (msg) => {
+  const chatId = msg.chat.id;
+
+  bot.sendMessage(chatId, 'Received your message');
+});
+
+
 bot.onText(/ADS/, function (msg) {
   
 
