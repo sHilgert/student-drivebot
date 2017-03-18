@@ -28,7 +28,7 @@ bot.on('webhook_error', (error) => console.log(error.code));
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
 
-  bot.sendMessage(chatId, 'Received your message');
+  bot.sendMessage(chatId, msg.entities);
 });
 
 
