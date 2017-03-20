@@ -2,19 +2,30 @@ const mongoose = require('mongoose');
 var Link = require('../models/link');
 
 exports.create =function (linkObject){
-  var link = new Link({});
-  link.chatId = linkObject.chatId;
-  link.userId = linkObject.userId;
-  link.name = linkObject.name;
-  link.desc = linkObject.desc;
-  link.link = linkObject.link;
+  const link = new Link(linkObject);
   return link.save();
   
 };
 
-exports.allLinks = function(res){
+exports.update = function(linkObject){
+  Link.findOne({chatId: linkObject.chatId, messageId: linkObject.messageId}, function(err, link){
+    if(err) throw err;
+    link.like = linkObject.like;
+    link.dislike = linkObject.dislike;
+    link.save();
+  });
+};
+
+exports.findByMessageAndChat = function(messageId, chatId, res){
+  Link.findOne({chatId: chatId, messageId: messageId}, function(err, link){
+    if(err) throw err;
+    res(link);
+  });
+};
+
+exports.allLinks = function(id, res){
   
-  Link.find({}, function(err, links) {
+  Link.find({chatId: id}, function(err, links) {
     if (err) throw err;
     res(links);
   });

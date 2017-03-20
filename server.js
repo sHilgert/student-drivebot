@@ -1,8 +1,9 @@
 "use strict";
 const TelegramBot = require('node-telegram-bot-api');
-const linkController = require('./controllers/linkController');
 const mongoose = require('mongoose');
 
+// Controllers
+const linkController = require('./controllers/linkController');
 
 //Ambient
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN; 
@@ -22,9 +23,6 @@ conn.on('error', console.error.bind(console, 'connection error:'));
 conn.once('open', function() {
   console.log("connected");
 });
-
-
-// Controllers
 
 // Bot
 const botOptions = {
@@ -47,17 +45,17 @@ bot.on('message', (msg) => {
     msg.entities.forEach(function(entity){
       const chatId = msg.chat.id;
       console.log(msg);
-      console.log(msg.chat.id);
-      console.log(msg.from.id);
-      console.log(msg.from.name);
-      console.log(msg.text.substring(entity.offset, entity.offset + entity.length));
+      const link = msg.text.substring(entity.offset, entity.offset + entity.length);
       if(entity.type && entity.type === 'url'){
         
-        linkController.create({ 
+        linkController.create({
+          messageId: msg.message_id,
           chatId: msg.chat.id,
           userId: msg.from.id,
           name: msg.from.first_name,
-          link: (msg.text.substring(entity.offset, entity.offset + entity.length)),
+          link: link,
+          like: {count: 0, users: []},
+          dislike: {count: 0, users: []},
           desc: ""
         },
         
@@ -66,50 +64,138 @@ bot.on('message', (msg) => {
             console.log(err);
         });
         
-        bot.sendMessage(chatId, "you have a link in your message");
+        var options = {
+          reply_markup: JSON.stringify({
+            inline_keyboard: [
+              [{ text: 'dislike', callback_data: "dislike"}, { text: 'like', callback_data: "like"}]
+            ]
+          })
+        };
+        
+        bot.sendMessage(chatId, msg.from.first_name + " posted a link:\n" + link, options);
+        
       }
     });
   }
 });
 
-bot.onText(/links/, function (msg) {
-  var chatId = msg.chat.id;
-  linkController.allLinks(function(res){
-    res.forEach(function(r){
-      bot.sendMessage(chatId, r.name + "\n" + r.link);
+bot.onText(/all/, function (msg) {
+    var userId = msg.from.id;
+    var chatId = msg.chat.id;
+    
+    bot.sendMessage(chatId, "links send via private chat");
+    bot.sendMessage(userId, "- new links comming -");
+
+    linkController.allLinks(chatId ,function(res){
+      res.forEach(function(r){
+        bot.sendMessage(userId, r.name + "\n" + r.link + "\nlikes: " + r.like.count + "\ndislikes:" + r.dislike.count);
+      });
     });
-  });
-  
 });
 
-bot.onText(/ADS/, function (msg) {
-  
-
-  var chatId = msg.chat.id;
-  
-  bot.sendMessage(chatId, 'O curso de Análise e Desenvolvimento de Sistemas ...');
-});
-
-bot.onText(/BD/, function (msg) {
-  
-
-  var chatId = msg.chat.id;
-  
-  bot.sendMessage(chatId, 'O curso de Banco de Dados ...');
-});
-
-bot.onText(/\/cursos/, function (msg) {
+bot.onText(/links/, function (msg) {
   var chatId = msg.chat.id;
   var opts = {
       reply_to_message_id: msg.message_id,
       reply_markup: JSON.stringify({
-        keyboard: [
-          ['ADS'],
-          ['BD']]
+        keyboard: [['all'],['choose user']],
+        one_time_keyboard: true,
+        selective: true
       })
     };
-    bot.sendMessage(chatId, 'Sobre qual curso você deseja receber informações?', opts);
+  bot.sendMessage(chatId,'select option', opts);
+});
+
+bot.onText(/\/drive/, function (msg) {
+  var chatId = msg.chat.id;
+  var opts = {
+      reply_to_message_id: msg.message_id,
+      reply_markup: JSON.stringify({
+        keyboard: [['links', 'files'],['remainders']],
+        selective: true
+      })
+    };
+    bot.sendMessage(chatId, 'select a drive service', opts);
+});
+
+bot.on('callback_query', function(msg) {
+    var user = msg.from;
+    var userId = {userId: user.id};
+    var data = msg.data;
+    if(data === 'dislike'){
+      linkController.findByMessageAndChat(msg.message.message_id - 1, msg.message.chat.id, function(link){
+        if(!containsObject(userId, link.dislike.users)){
+          if(!containsObject(userId, link.like.users)){
+            link.dislike.count++;
+            link.dislike.users.push(userId);
+            
+            replyInlineButton(bot, link, msg);  
+
+            bot.answerCallbackQuery(msg.id, 'You disliked ' + user.first_name + ' link');
+          }else{
+            link.like.count--;
+            var index = link.like.users.indexOf(userId);
+            link.like.users.splice(index, 1);
+            
+            link.dislike.count++;
+            link.dislike.users.push(userId);
+            replyInlineButton(bot, link, msg);  
+
+            bot.answerCallbackQuery(msg.id, 'You disliked ' + user.first_name + ' link');
+          }
+        }else{
+          bot.answerCallbackQuery(msg.id, 'You already disliked ' + user.first_name + ' link');
+        }
+      });
+      
+    }else if (data === 'like'){
+      linkController.findByMessageAndChat(msg.message.message_id - 1, msg.message.chat.id, function(link){
+        if(!containsObject(userId, link.like.users)){
+          if(!containsObject(userId, link.dislike.users)){
+            link.like.count++;
+            link.like.users.push(userId);
+            
+            replyInlineButton(bot, link, msg);  
+
+            bot.answerCallbackQuery(msg.id, 'You liked ' + user.first_name + ' link');
+          }else{
+            link.dislike.count--;
+            var index = link.dislike.users.indexOf(userId);
+            link.dislike.users.splice(index, 1);
+            
+            link.like.count++;
+            link.like.users.push(userId);
+            replyInlineButton(bot, link, msg);  
+
+            bot.answerCallbackQuery(msg.id, 'You liked ' + user.first_name + ' link');
+          }
+        }else{
+          bot.answerCallbackQuery(msg.id, 'You already liked ' + user.first_name + ' link');
+        }
+      });
+    }
 });
 
 
+function containsObject(obj, list) {
+    var i;
+    for (i = 0; i < list.length; i++) {
+        if (list[i].userId == obj.userId) {
+            return true;
+        }
+    }
 
+    return false;
+}
+
+function replyInlineButton(bot, link, msg){
+  linkController.update(link);
+  
+  var settings = {
+    inline_keyboard: [
+        [{ text: link.dislike.count + ' dislike ', callback_data: "dislike"}, { text: link.like.count + ' like', callback_data: "like"}]
+      ]
+  };
+  
+  bot.editMessageReplyMarkup(settings, {message_id: msg.message.message_id, chat_id: msg.message.chat.id});
+}

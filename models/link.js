@@ -7,8 +7,15 @@ const LinkSchema = new Schema({
   userId: Number,
   name: String,
   link: String,
-  like: Number,
-  dislike: Number,
+  like: {
+    count: Number,
+    users: [{_id:false, userId: Number}]
+  },
+  dislike: {
+    count: Number,
+    users: [{_id:false, userId: Number}]
+  },
+  messageId: Number,
   desc: String,
   
   createdAt: {
