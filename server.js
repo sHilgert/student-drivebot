@@ -193,7 +193,8 @@ function replyInlineButton(bot, link, msg){
   
   var settings = {
     inline_keyboard: [
-        [{ text: link.dislike.count + ' dislike ', callback_data: "dislike"}, { text: link.like.count + ' like', callback_data: "like"}]
+        [{ text: link.dislike.count + ' dislike ', callback_data: "dislike"},
+        { text: link.like.count + ' like', callback_data: "like"}]
       ]
   };
   
