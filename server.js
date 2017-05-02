@@ -88,7 +88,9 @@ bot.onText(/all/, function (msg) {
 
     linkController.allLinks(chatId ,function(res){
       res.forEach(function(r){
-        bot.sendMessage(userId, r.name + "\n" + r.link + "\nlikes: " + r.like.count + "\ndislikes:" + r.dislike.count);
+        bot.sendMessage(userId, r.name + "\n" + 
+        r.link + "\nlikes: " + r.like.count + 
+        "\ndislikes:" + r.dislike.count);
       });
     });
 });
