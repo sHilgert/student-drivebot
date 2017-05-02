@@ -200,5 +200,6 @@ function replyInlineButton(bot, link, msg){
       ]
   };
   
-  bot.editMessageReplyMarkup(settings, {message_id: msg.message.message_id, chat_id: msg.message.chat.id});
+  bot.editMessageReplyMarkup(settings, 
+  {message_id: msg.message.message_id, chat_id: msg.message.chat.id});
 }
